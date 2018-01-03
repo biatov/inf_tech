@@ -1,0 +1,180 @@
+version: '2'
+services:
+  server:
+    build: ../backend
+    restart: always
+    expose:
+      - '9000'
+      - '8000'
+    links:
+      - 'postgres:postgres'
+      - 'mongo:mongo'
+    volumes:
+      - './static:/usr/src/static'
+      - './media:/usr/src/media'
+      - '../backend:/usr/src/app'
+    env_file: .env
+    environment:
+      DEBUG: 'False'
+    ports: []
+    entrypoint: sh ./entrypoint.sh
+  scrapyd:
+    build: ../backend
+    expose:
+      - '6800'
+      - '5000'
+    links:
+      - 'postgres:postgres'
+      - 'mongo:mongo'
+    volumes:
+      - './static:/usr/src/static'
+      - '../backend:/usr/src/app'
+    env_file: .env
+    environment:
+      DEBUG: 'False'
+    entrypoint: sh ./crawler/scrapyd.sh
+    ports: []
+  mongo:
+    image: mongo
+    expose:
+      - '27017'
+    volumes:
+      - './mongo_data:/data/db'
+      - './dumps/mongo/:/home/backups/mongodb'
+    ports:
+      - '27027:27017'
+  postgres:
+    image: 'postgres:9.6.3'
+    volumes:
+      - './postgres/data:/var/lib/postgresql/data'
+      - './dumps/postgres:/home/backups'
+    ports:
+      - '5442:5432'
+  nginx:
+    image: nginx
+    restart: always
+    ports:
+      - '80:80'
+    volumes:
+      - './static:/www/static'
+      - './media:/www/media'
+      - './cp:/www/cp'
+      - './landing:/www/landing'
+      - './nginx/conf.d:/etc/nginx/conf.d'
+      - './nginx/passwd:/etc/nginx/passwd'
+  node:
+    image: node
+    build: ../frontend
+    expose:
+      - '3000'
+      - '3030'
+    volumes:
+      - '../frontend:/frontend'
+      - './cp:/frontend/dist'
+      - './landing:/frontend/landing_share'
+      - './app/bower_components:/frontend/bower_components'
+      - './app/node_modules:/frontend/node_modules'
+    entrypoint: sh ../frontend/entrypoint.sh
+  redis:
+    image: redis
+    expose:
+      - '6379'
+    volumes:
+      - './redis:/data'
+    ports:
+      - '6380:6379'
+  rabbitmq:
+    image: 'rabbitmq:3-management'
+    environment:
+      - RABBITMQ_DEFAULT_USER=rabbitmq
+      - RABBITMQ_DEFAULT_PASS=lkafhy4iqoiy
+      - RABBITMQ_ERLANG_COOKIE=asdklv56ljhqeuqhg
+    expose:
+      - '5672'
+      - '15672'
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+  proxy:
+    build: ./haproxy
+    restart: unless-stopped
+    ports:
+      - '4444:4444'
+      - '5566:5566'
+      - '8050:8050'
+      - '8066:8066'
+    links:
+      - splash1
+      - splash2
+      - splash3
+      - splash4
+      - splash5
+      - splash6
+      - splash7
+    volumes:
+      - './haproxy/scripts:/haproxy'
+    entrypoint: sh /haproxy/entrypoint.sh
+  tor:
+    image: jess/tor-proxy
+    expose:
+      - 9050
+    ports:
+      - '9050:9050'
+    logging:
+      driver: none
+    restart: always
+  splash1:
+    image: scrapinghub/splash
+    restart: always
+    ports:
+      - '8051:8051'
+    volumes:
+      - './splash/proxy-profiles:/etc/splash/proxy-profiles'
+      - './splash/script:/app'
+    entrypoint: sh /app/entrypoint.sh 8051
+  splash2:
+    image: scrapinghub/splash
+    restart: always
+    volumes:
+      - './splash/proxy-profiles:/etc/splash/proxy-profiles'
+      - './splash/script:/app'
+    entrypoint: sh /app/entrypoint.sh 8052
+  splash3:
+    image: scrapinghub/splash
+    restart: always
+    volumes:
+      - './splash/proxy-profiles:/etc/splash/proxy-profiles'
+      - './splash/script:/app'
+    entrypoint: sh /app/entrypoint.sh 8053
+  splash4:
+    image: scrapinghub/splash
+    restart: always
+    volumes:
+      - './splash/proxy-profiles:/etc/splash/proxy-profiles'
+      - './splash/script:/app'
+    entrypoint: sh /app/entrypoint.sh 8054
+  splash5:
+    image: scrapinghub/splash
+    restart: always
+    volumes:
+      - './splash/proxy-profiles:/etc/splash/proxy-profiles'
+      - './splash/script:/app'
+    entrypoint: sh /app/entrypoint.sh 8055
+  splash6:
+    image: scrapinghub/splash
+    restart: always
+    volumes:
+      - './splash/proxy-profiles:/etc/splash/proxy-profiles'
+      - './splash/script:/app'
+    entrypoint: sh /app/entrypoint.sh 8056
+  splash7:
+    image: scrapinghub/splash
+    restart: always
+    volumes:
+      - './splash/proxy-profiles:/etc/splash/proxy-profiles'
+      - './splash/script:/app'
+    entrypoint: sh /app/entrypoint.sh 8057
+volumes:
+  cp: {}
+  static: {}
+  landing: {}
